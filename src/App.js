@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import MovieCard from './MovieCard';
 import Counter from './Counter';
 import styles from './App.module.css';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function App() {
   const [genre, setGenre] = useState('');
@@ -125,39 +126,57 @@ function App() {
         </div>
       )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      {movies.length > 0 ? (
-        movies.map((movie) => (
-          <MovieCard
-            key={movie.imdbID}
-            title={movie.Title}
-            year={movie.Year}
-            poster={movie.Poster}
-            imdbID={movie.imdbID}
-            isFavorite={favorites.some(fav => fav.imdbID === movie.imdbID)}
-            toggleFavorite={() => {
-              setFavorites(favorites.some(fav => fav.imdbID === movie.imdbID)
-                ? favorites.filter(fav => fav.imdbID !== movie.imdbID)
-                : [...favorites, movie]);
-            }}
-            onClick={async () => {
-              try {
-                setLoading(true);
-                const response = await fetch(`http://www.omdbapi.com/?i=${movie.imdbID}&apikey=${API_KEY}`);
-                if (!response.ok) throw new Error('Failed to fetch movie details');
-                const data = await response.json();
-                if (data.Response === 'True') setSelectedMovie(data);
-                else setError(data.Error || 'Failed to load movie details');
-              } catch (error) {
-                setError(error.message);
-              } finally {
-                setLoading(false);
-              }
-            }}
-          />
-        ))
-      ) : (
-        !loading && !error && <p>No movies found</p>
-      )}
+      
+
+<AnimatePresence>
+  {movies.map((movie, index) => (
+    <motion.div
+      key={movie.imdbID}
+      layout
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0, 
+        scale: 1 
+      }}
+      exit={{ opacity: 0, scale: 0.8, y: -20 }}
+      transition={{ 
+        duration: 0.5,
+        delay: index * 0.05,  // ← задержка для каждой карточки
+        type: "spring",
+        stiffness: 100
+      }}
+      style={{ width: '100%', marginBottom: '16px' }}
+    >
+      <MovieCard
+        title={movie.Title}
+        year={movie.Year}
+        poster={movie.Poster}
+        imdbID={movie.imdbID}
+        isFavorite={favorites.some(fav => fav.imdbID === movie.imdbID)}
+        toggleFavorite={() => {
+          setFavorites(favorites.some(fav => fav.imdbID === movie.imdbID)
+            ? favorites.filter(fav => fav.imdbID !== movie.imdbID)
+            : [...favorites, movie]);
+        }}
+        onClick={async () => {
+          try {
+            setLoading(true);
+            const response = await fetch(`http://www.omdbapi.com/?i=${movie.imdbID}&apikey=${API_KEY}`);
+            if (!response.ok) throw new Error('Failed to fetch movie details');
+            const data = await response.json();
+            if (data.Response === 'True') setSelectedMovie(data);
+            else setError(data.Error || 'Failed to load movie details');
+          } catch (error) {
+            setError(error.message);
+          } finally {
+            setLoading(false);
+          }
+        }}
+      />
+    </motion.div>
+  ))}
+</AnimatePresence>
       {movies.length > 0 && (
         <button
           onClick={() => {
