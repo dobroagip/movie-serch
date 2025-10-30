@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import MovieCard from './MovieCard';
 import Counter from './Counter';
 import styles from './App.module.css';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function App() {
   const [genre, setGenre] = useState('');
@@ -128,11 +128,27 @@ function App() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       
 
-{movies.length > 0 ? (
-  <AnimatePresence>
-    {movies.map((movie) => (
+<AnimatePresence>
+  {movies.map((movie, index) => (
+    <motion.div
+      key={movie.imdbID}
+      layout
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0, 
+        scale: 1 
+      }}
+      exit={{ opacity: 0, scale: 0.8, y: -20 }}
+      transition={{ 
+        duration: 0.5,
+        delay: index * 0.05,  // ← задержка для каждой карточки
+        type: "spring",
+        stiffness: 100
+      }}
+      style={{ width: '100%', marginBottom: '16px' }}
+    >
       <MovieCard
-        key={movie.imdbID}
         title={movie.Title}
         year={movie.Year}
         poster={movie.Poster}
@@ -158,11 +174,9 @@ function App() {
           }
         }}
       />
-    ))}
-  </AnimatePresence>
-) : (
-  !loading && !error && <p>No movies found</p>
-)}
+    </motion.div>
+  ))}
+</AnimatePresence>
       {movies.length > 0 && (
         <button
           onClick={() => {
