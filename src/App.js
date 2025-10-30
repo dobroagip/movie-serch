@@ -29,42 +29,45 @@ function App() {
   // Функция поиска фильмов с использованием useCallback
   const searchMovies = useCallback(async (currentPage, isLoadMore = false) => {
     setLoading(true);
+    let filteredMovies = [];
     try {
-      const response = await fetch(
-        `http://www.omdbapi.com/?s=${encodeURIComponent(search)}&page=${currentPage}&apikey=${API_KEY}`
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const data = await response.json();
-      if (data.Response === 'True') {
-        // Получаем полные данные для каждого фильма
-        const moviePromises = data.Search.map(async (movie) => {
-          const detailResponse = await fetch(`http://www.omdbapi.com/?i=${movie.imdbID}&apikey=${API_KEY}`);
-          const detailData = await detailResponse.json();
-          return detailData.Response === 'True' ? detailData : movie;
-        });
-        const detailedMovies = await Promise.all(moviePromises);
+  const response = await fetch(
+    `http://www.omdbapi.com/?s=${encodeURIComponent(search)}&page=${currentPage}&apikey=${API_KEY}`
+  );
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  const data = await response.json();
 
-        let filteredMovies = detailedMovies;
-        if (genre) {
-          filteredMovies = detailedMovies.filter(movie => {
-            return movie.Genre && movie.Genre.split(',').some(g => g.trim().toLowerCase() === genre.toLowerCase());
-          });
-        }
-        setMovies(prevMovies => isLoadMore ? [...prevMovies, ...filteredMovies] : filteredMovies);
-        setError('');
-      } else {
-        setMovies(isLoadMore ? movies : []);
-        setError(data.Error || 'No movies found');
-      }
-    } catch (error) {
-      console.error('Fetch error:', error);
-      setMovies(isLoadMore ? movies : []);
-      setError(error.message);
-    } finally {
-      setLoading(false);
+  if (data.Response === 'True') {
+    // Получаем полные данные для каждого фильма
+    const moviePromises = data.Search.map(async (movie) => {
+      const detailResponse = await fetch(`http://www.omdbapi.com/?i=${movie.imdbID}&apikey=${API_KEY}`);
+      const detailData = await detailResponse.json();
+      return detailData.Response === 'True' ? detailData : movie;
+    });
+    const detailedMovies = await Promise.all(moviePromises);
+
+    filteredMovies = detailedMovies;
+    if (genre) {
+      filteredMovies = detailedMovies.filter(movie => {
+        return movie.Genre && movie.Genre.split(',').some(g => g.trim().toLowerCase() === genre.toLowerCase());
+      });
     }
+
+    setMovies(prev => isLoadMore ? [...prev, ...filteredMovies] : filteredMovies);
+    setError('');
+  } else {
+    setMovies(prev => isLoadMore ? [...prev] : []);
+    setError(data.Error || 'No movies found');
+  }
+} catch (error) {
+  console.error('Fetch error:', error);
+  setMovies(prev => isLoadMore ? [...prev] : []);
+  setError(error.message);
+} finally {
+  setLoading(false);
+}
   }, [search, genre, API_KEY]);
 
   // Эффект для поиска при изменении search или genre
