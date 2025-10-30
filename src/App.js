@@ -18,6 +18,11 @@ function App() {
     const savedFavorites = localStorage.getItem('favorites');
     return savedFavorites ? JSON.parse(savedFavorites) : [];
   });
+  // Инициализация темы с использованием useState и localStorage
+  const [isDark, setIsDark] = useState(() => {
+  const saved = localStorage.getItem('theme');
+  return saved === 'dark';
+});
 
   const API_KEY = 'bbc1f8d1'; // Замени на свой OMDB API ключ
 
@@ -25,6 +30,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
+// Эффект для применения темы при изменении isDar
+  useEffect(() => {
+  // 2. Записываем в localStorage
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+
+  // 3. Применяем класс к <html>
+  document.documentElement.classList.toggle('dark', isDark);
+}, [isDark]);
 
   // Функция поиска фильмов с использованием useCallback
   const searchMovies = useCallback(async (currentPage, isLoadMore = false) => {
@@ -89,8 +102,30 @@ function App() {
     <div className={styles.container}>
       <div className={styles.nav}>
         <h1>Movie Search</h1>
+        <div className={styles.themeToggle}>
+  <button
+    onClick={() => setIsDark(prev => !prev)}
+    className={styles.toggleButton}
+  >
+    {isDark ? 'Светлая' : 'Тёмная'}
+  </button>
+</div>
         <Counter />
       </div>
+      <div className={styles.nav}>
+  <h1>Movie Search</h1>
+  <Counter />
+</div>
+
+{/* ← КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ */}
+<div className={styles.themeToggle}>
+  <button
+    onClick={() => setIsDark(prev => !prev)}
+    className={styles.toggleButton}
+  >
+    {isDark ? 'Светлая' : 'Тёмная'}
+  </button>
+</div>
       <select
         value={genre}
         onChange={(e) => setGenre(e.target.value)}
