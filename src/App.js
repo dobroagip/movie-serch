@@ -19,10 +19,17 @@ function App() {
     return savedFavorites ? JSON.parse(savedFavorites) : [];
   });
   // Инициализация темы с использованием useState и localStorage
-  const [isDark, setIsDark] = useState(() => {
-  const saved = localStorage.getItem('theme');
-  return saved === 'dark';
-});
+  const [isDark, setIsDark] = useState(false);
+
+// Эффект для инициализации темы на клиенте
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      setIsDark(true);
+    }
+  }
+}, []);
 
   const API_KEY = 'bbc1f8d1'; // Замени на свой OMDB API ключ
 
@@ -32,27 +39,25 @@ function App() {
   }, [favorites]);
 // Эффект для применения темы при изменении isDar
   useEffect(() => {
-  // 2. Записываем в localStorage
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-
-  // 3. Применяем класс к <html>
-  document.documentElement.classList.toggle('dark', isDark);
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.documentElement.classList.toggle('dark', isDark);
+  }
 }, [isDark]);
 
   // Функция поиска фильмов с использованием useCallback
   const searchMovies = useCallback(async (currentPage, isLoadMore = false) => {
-    setLoading(true);
-    let filteredMovies = [];
-    try {
-  const response = await fetch(
-    `http://www.omdbapi.com/?s=${encodeURIComponent(search)}&page=${currentPage}&apikey=${API_KEY}`
-  );
-  if (!response.ok) {
-    throw new Error(`HTTP error! Status: ${response.status}`);
-  }
-  const data = await response.json();
-
-  if (data.Response === 'True') {
+  setLoading(true);
+  try {
+    const response = await fetch(
+      `http://www.omdbapi.com/?s=${encodeURIComponent(search)}&page=${currentPage}&apikey=${API_KEY}`,
+      { mode: 'cors' }  // Добавь CORS
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.Response === 'True') {
     // Получаем полные данные для каждого фильма
     const moviePromises = data.Search.map(async (movie) => {
       const detailResponse = await fetch(`http://www.omdbapi.com/?i=${movie.imdbID}&apikey=${API_KEY}`);
@@ -75,13 +80,12 @@ function App() {
     setError(data.Error || 'No movies found');
   }
 } catch (error) {
-  console.error('Fetch error:', error);
-  setMovies(prev => isLoadMore ? [...prev] : []);
-  setError(error.message);
-} finally {
-  setLoading(false);
-}
-  }, [search, genre, API_KEY]);
+    console.error('Fetch error:', error);
+    setError(error.message);  // Показывай ошибку пользователю
+  } finally {
+    setLoading(false);
+  }
+}, [search, genre, API_KEY]);
 
   // Эффект для поиска при изменении search или genre
   useEffect(() => {
@@ -112,20 +116,7 @@ function App() {
 </div>
         <Counter />
       </div>
-      <div className={styles.nav}>
-  <h1>Movie Search</h1>
-  <Counter />
-</div>
-
 {/* ← КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ */}
-<div className={styles.themeToggle}>
-  <button
-    onClick={() => setIsDark(prev => !prev)}
-    className={styles.toggleButton}
-  >
-    {isDark ? 'Светлая' : 'Тёмная'}
-  </button>
-</div>
       <select
         value={genre}
         onChange={(e) => setGenre(e.target.value)}
